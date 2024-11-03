@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: portfolio-ms
+  output:
+    ansi:
+      enabled: ALWAYS
+
+github:
+  base-url: https://api.github.com
+  api-version: 2022-11-28
+  username: ericthalakottur

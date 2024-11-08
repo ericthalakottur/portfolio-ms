@@ -11,8 +11,8 @@ import java.util.Map;
 @HttpExchange(accept = "application/vnd.github+json")
 public interface GitHubAPI {
 
-    @GetExchange("/users/{username}/repos")
-    List<RepositoryDTO> getListOfRepositories(@PathVariable String username);
+    @GetExchange("/users/{username}/repos?type=owner&sort=updated&direction=desc&per_page=10")
+    List<RepositoryDTO> getListOfUserRepositories(@PathVariable String username);
 
     @GetExchange("/repos/{username}/{repo}/languages")
     Map<String, Integer> getRespositoryLanguages(@PathVariable String username, @PathVariable String repo);

@@ -13,5 +13,4 @@ public class RepositoryDTO {
     private Boolean disabled;
     @JsonProperty("private")
     private Boolean isPrivate;
-    private OwnerDTO owner;
 }

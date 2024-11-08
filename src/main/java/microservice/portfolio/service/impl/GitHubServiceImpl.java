@@ -40,9 +40,8 @@ public class GitHubServiceImpl implements GitHubService {
     private void updateGitHubStats() {
         log.info("Updating GitHub stats");
 
-        List<RepositoryDTO> repositoryDTOList = gitHubAPI.getListOfRepositories(gitHubUsername).stream()
-                .filter(repositoryDTO -> gitHubUsername.equals(repositoryDTO.getOwner().getLogin())
-                        && !gitHubUsername.equals(repositoryDTO.getName())
+        List<RepositoryDTO> repositoryDTOList = gitHubAPI.getListOfUserRepositories(gitHubUsername).stream()
+                .filter(repositoryDTO -> !gitHubUsername.equals(repositoryDTO.getName())
                         && !repositoryDTO.getArchived()
                         && !repositoryDTO.getDisabled()
                         && !repositoryDTO.getIsPrivate()

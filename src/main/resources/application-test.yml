@@ -1,0 +1,4 @@
+github:
+  base-url: https://localhost
+  stats-update-rate: "PT4S"
+  username: test-user

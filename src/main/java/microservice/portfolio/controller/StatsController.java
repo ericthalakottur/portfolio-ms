@@ -11,12 +11,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/stats")
-public class StatsApi {
+public class StatsController {
 
     private final GitHubService gitHubService;
 
     @Autowired
-    public StatsApi(GitHubService gitHubService) {
+    public StatsController(GitHubService gitHubService) {
         this.gitHubService = gitHubService;
     }
 

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -36,7 +35,7 @@ public class GitHubServiceImpl implements GitHubService {
         return this.gitHubStatsDTOList;
     }
 
-    @Scheduled(fixedRate = 6, timeUnit = TimeUnit.HOURS)
+    @Scheduled(fixedRateString = "${github.stats-update-rate:PT24H}")
     private void updateGitHubStats() {
         log.info("Updating GitHub stats");
 
@@ -51,12 +50,13 @@ public class GitHubServiceImpl implements GitHubService {
         this.gitHubStatsDTOList = repositoryDTOList.stream()
                 .map(repositoryDTO -> {
                         var repositoryLanguages = gitHubAPI.getRespositoryLanguages(gitHubUsername, repositoryDTO.getName());
-                        return GitHubStatsDTO.builder()
-                                .name(repositoryDTO.getName())
-                                .description(repositoryDTO.getDescription())
-                                .htmlUrl(repositoryDTO.getHtmlUrl())
-                                .languages(repositoryLanguages.keySet())
-                                .build();
+                        var gitHubStatsDTO = new GitHubStatsDTO();
+                        gitHubStatsDTO.setName(repositoryDTO.getName());
+                        gitHubStatsDTO.setDescription(repositoryDTO.getDescription());
+                        gitHubStatsDTO.setHtmlUrl(repositoryDTO.getHtmlUrl());
+                        gitHubStatsDTO.setLanguages(repositoryLanguages.keySet());
+
+                        return gitHubStatsDTO;
                 })
                 .toList();
 

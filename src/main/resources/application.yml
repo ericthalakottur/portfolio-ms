@@ -5,6 +5,17 @@ spring:
     ansi:
       enabled: ALWAYS
 
+# Spring Boot Actuator configuration
+management:
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      enabled: true
+
 github:
   base-url: https://api.github.com
   api-version: 2022-11-28

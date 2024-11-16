@@ -27,4 +27,6 @@ USER appuser
 
 EXPOSE 8080
 
+HEALTHCHECK CMD wget -qO- http://localhost:8080/actuator/health | grep "UP" || exit 1
+
 CMD ["java", "-jar", "portfolio-ms-application.jar"]

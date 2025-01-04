@@ -2,11 +2,14 @@ package microservice.portfolio.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
-@Data
+@Getter
 @Builder
+@Jacksonized
 public class RepositoryDTO {
+    private Long id;
     private String name;
     @JsonProperty("html_url")
     private String htmlUrl;

@@ -1,11 +1,16 @@
 package microservice.portfolio.dto;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Set;
 
-@Data
+@Getter
+@Builder
+@Jacksonized
 public class GitHubStatsDTO {
+    private Long id;
     private String name;
     private String description;
     private String htmlUrl;

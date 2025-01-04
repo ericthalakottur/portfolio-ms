@@ -1,10 +1,9 @@
 package microservice.portfolio.service;
 
 import microservice.portfolio.dto.GitHubStatsDTO;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 public interface GitHubService {
 
-    List<GitHubStatsDTO> getGitHubStats();
+    Flux<GitHubStatsDTO> getGitHubStats();
 }

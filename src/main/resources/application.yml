@@ -5,6 +5,15 @@ spring:
     ansi:
       enabled: ALWAYS
 
+  # Datasource
+  r2dbc:
+    url: url
+    username: username
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: none
+
 # Spring Boot Actuator configuration
 management:
   endpoints:
@@ -20,3 +29,9 @@ github:
   base-url: https://api.github.com
   api-version: 2022-11-28
   username: ericthalakottur
+atcoder:
+  base-url: https://kenkoooo.com/atcoder/atcoder-api/v3
+  username: erict
+hackthebox:
+  base-url: https://labs.hackthebox.com/api/v4
+  api-token: test

@@ -1,75 +1,64 @@
 package microservice.portfolio.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import microservice.portfolio.api.GitHubAPI;
 import microservice.portfolio.dto.GitHubStatsDTO;
-import microservice.portfolio.entity.GitHubStatsEntity;
-import microservice.portfolio.mapper.GitHubStatsMapper;
-import microservice.portfolio.repository.GitHubStatsRepository;
 import microservice.portfolio.service.GitHubService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
 public class GitHubServiceImpl implements GitHubService {
 
     private final GitHubAPI gitHubAPI;
-    private final GitHubStatsRepository gitHubStatsRepository;
-    private final GitHubStatsMapper gitHubStatsMapper;
-    private final ObjectMapper objectMapper;
+    private List<GitHubStatsDTO> gitHubStatsList;
 
     @Value("${github.username}")
     private String gitHubUsername;
 
     @Autowired
-    public GitHubServiceImpl(GitHubAPI gitHubAPI, GitHubStatsRepository gitHubStatsRepository, GitHubStatsMapper gitHubStatsMapper) {
+    public GitHubServiceImpl(GitHubAPI gitHubAPI) {
         this.gitHubAPI = gitHubAPI;
-        this.gitHubStatsRepository = gitHubStatsRepository;
-        this.gitHubStatsMapper = gitHubStatsMapper;
-        this.objectMapper = new ObjectMapper();
+        this.gitHubStatsList = new ArrayList<>();
     }
 
     @Override
     public Flux<GitHubStatsDTO> getGitHubStats() {
-        return this.gitHubStatsRepository.findAll()
-                .map(this.gitHubStatsMapper::toGitHubStatsDTO);
+        return Flux.fromIterable(this.gitHubStatsList);
     }
 
     @Scheduled(fixedRateString = "${github.stats-update-rate:PT24H}")
     private void updateGitHubStats() {
         log.info("Updating GitHub stats");
 
-        List<GitHubStatsEntity> gitHubStatsEntityList = gitHubAPI.getListOfUserRepositories(gitHubUsername)
+        this.gitHubStatsList = gitHubAPI.getListOfUserRepositories(gitHubUsername)
                 .stream()
-                .filter(repositoryDTO -> !gitHubUsername.equals(repositoryDTO.getName())
-                        && !repositoryDTO.getArchived()
-                        && !repositoryDTO.getDisabled()
-                        && !repositoryDTO.getIsPrivate()
+                .filter(repositoryDTO -> !gitHubUsername.equals(repositoryDTO.name())
+                        && !repositoryDTO.archived()
+                        && !repositoryDTO.disabled()
+                        && !repositoryDTO.isPrivate()
                 )
                 .map(repositoryDTO -> {
-                    var repositoryLanguages = gitHubAPI.getRespositoryLanguages(gitHubUsername, repositoryDTO.getName());
-                    var gitHubStatsEntity = this.gitHubStatsMapper.toGitHubStatsEntityBuilder(repositoryDTO, repositoryLanguages);
+                    Set<String> repositoryLanguages = gitHubAPI.getRepositoryLanguages(gitHubUsername, repositoryDTO.name())
+                            .keySet();
 
-                    var gitHubStatsEntityOptional = gitHubStatsRepository.findByGitHubId(repositoryDTO.getId()).blockOptional();
-                    gitHubStatsEntityOptional.ifPresent(entity -> gitHubStatsEntity.id(entity.getId()));
-
-                    return gitHubStatsEntity.build();
+                    return GitHubStatsDTO.builder()
+                            .id(repositoryDTO.id())
+                            .name(repositoryDTO.name())
+                            .description(repositoryDTO.description())
+                            .htmlUrl(repositoryDTO.htmlUrl())
+                            .languages(repositoryLanguages)
+                            .build();
                 })
                 .toList();
-
-        try {
-            this.gitHubStatsRepository.saveAll(gitHubStatsEntityList).blockLast();
-        } catch (Exception e) {
-            log.error("Unable to save data to Database: {}", e.getMessage());
-        }
 
         log.info("Finished updating GitHub stats");
     }

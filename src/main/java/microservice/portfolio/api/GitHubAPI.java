@@ -15,5 +15,5 @@ public interface GitHubAPI {
     List<RepositoryDTO> getListOfUserRepositories(@PathVariable String username);
 
     @GetExchange("/repos/{username}/{repo}/languages")
-    Map<String, Integer> getRespositoryLanguages(@PathVariable String username, @PathVariable String repo);
+    Map<String, Integer> getRepositoryLanguages(@PathVariable String username, @PathVariable String repo);
 }

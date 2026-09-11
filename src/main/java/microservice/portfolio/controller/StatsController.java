@@ -1,5 +1,8 @@
 package microservice.portfolio.controller;
 
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
+import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
 import microservice.portfolio.dto.GitHubStatsDTO;
 import microservice.portfolio.service.GitHubService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +15,18 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/stats")
 public class StatsController {
 
+    private final RateLimiter rateLimiter;
     private final GitHubService gitHubService;
 
     @Autowired
-    public StatsController(GitHubService gitHubService) {
+    public StatsController(RateLimiterRegistry rateLimiterRegistry, GitHubService gitHubService) {
+        this.rateLimiter = rateLimiterRegistry.rateLimiter("default");
         this.gitHubService = gitHubService;
     }
 
     @GetMapping("/github")
     Flux<GitHubStatsDTO> getGithubStats() {
-        return gitHubService.getGitHubStats();
+        return gitHubService.getGitHubStats()
+                .transformDeferred(RateLimiterOperator.of(rateLimiter));
     }
 }

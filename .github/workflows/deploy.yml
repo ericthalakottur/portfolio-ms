@@ -44,6 +44,8 @@ jobs:
         uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7
         with:
           languages: java-kotlin
+      - name: Build code
+        run: ./gradlew compileJava -x test
       - name: Perform Analysis
         uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7
       - name: Secret Scanning

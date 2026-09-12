@@ -1,0 +1,76 @@
+name: "Deploy to AWS"
+on:
+  push:
+    branches: [ "main", "development" ]
+  pull_request:
+    branches: [ "main", "development" ]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up JDK 25
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          java-version: 25
+          distribution: corretto
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+        with:
+          dependency-graph: generate-and-submit
+      - name: Test code
+        run: ./gradlew test
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7
+        with:
+          languages: java-kotlin
+      - name: Perform Analysis
+        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7
+      - name: Secret Scanning
+        uses: trufflesecurity/trufflehog@17456f8c7d042d8c82c9a8ca9e937231f9f42e26
+        with:
+          extra_args: --results=verified,unknown
+      - name: Run Trivy vulnerability scanner in config mode
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: config
+          scan-ref: "."
+
+  build-image:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
+    needs: [ test, security ]
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
+    needs: [ build-image ]
+    environment: production
+    permissions:
+      id-token: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+      - name: Deploy to AWS Lambda
+        run: |
+          aws lambda update-function-code \
+          --function-name ${{ secrets.FUNCTION_NAME }} \
+          --image-uri ${{ secrets.IMAGE_URL }}

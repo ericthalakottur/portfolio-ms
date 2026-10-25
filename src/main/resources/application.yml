@@ -27,14 +27,3 @@ resilience4j.ratelimiter:
       limitForPeriod: 10
       limitRefreshPeriod: 2s
       timeoutDuration: 0
-
-github:
-  base-url: https://api.github.com
-  api-version: 2022-11-28
-  username: ericthalakottur
-atcoder:
-  base-url: https://kenkoooo.com/atcoder/atcoder-api/v3
-  username: erict
-hackthebox:
-  base-url: https://labs.hackthebox.com/api/v4
-  api-token: test

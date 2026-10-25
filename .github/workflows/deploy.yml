@@ -1,103 +1,103 @@
-name: "Deploy to AWS"
-on:
-  push:
-    branches: [ "main", "development" ]
-  pull_request:
-    branches: [ "main", "development" ]
-
-permissions:
-  contents: write
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Set up JDK 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
-        with:
-          java-version: 25
-          distribution: corretto
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
-        with:
-          dependency-graph: generate-and-submit
-      - name: Test code
-        run: ./gradlew test
-
-  security:
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Set up JDK
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
-        with:
-          java-version: 25
-          distribution: corretto
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7
-        with:
-          languages: java-kotlin
-      - name: Build code
-        run: ./gradlew compileJava -x test
-      - name: Perform Analysis
-        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7
-      - name: Secret Scanning
-        uses: trufflesecurity/trufflehog@17456f8c7d042d8c82c9a8ca9e937231f9f42e26
-        with:
-          extra_args: --results=verified,unknown
-      - name: Run Trivy vulnerability scanner in config mode
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
-        with:
-          scan-type: config
-          scan-ref: "."
-
-  build:
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
-    needs: [ test, security ]
-    environment: production
-    permissions:
-      id-token: write
-    outputs:
-      image: ${{ steps.build_image.outputs.image }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
-        with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE }}
-      - name: Build, tag, and push image to Amazon ECR
-        id: build_image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-  deploy:
-    runs-on: ubuntu-latest
-    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
-    needs: [ build ]
-    environment: production
-    permissions:
-      id-token: write
-    steps:
-      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
-        with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE }}
-      - name: Deploy Lambda function
-        uses: aws-actions/aws-lambda-deploy@d496277188b89f0be02d7a2216fc912c0427702a
-        with:
-          package-type: Image
-          function-name: ${{ secrets.FUNCTION_NAME }}
-          image-uri: ${{ needs.build.outputs.image }}
+#name: "Deploy to AWS"
+#on:
+#  push:
+#    branches: [ "main", "development" ]
+#  pull_request:
+#    branches: [ "main", "development" ]
+#
+#permissions:
+#  contents: write
+#
+#jobs:
+#  test:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+#      - name: Set up JDK 25
+#        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+#        with:
+#          java-version: 25
+#          distribution: corretto
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+#        with:
+#          dependency-graph: generate-and-submit
+#      - name: Test code
+#        run: ./gradlew test
+#
+#  security:
+#    runs-on: ubuntu-latest
+#    permissions:
+#      security-events: write
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+#      - name: Set up JDK
+#        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+#        with:
+#          java-version: 25
+#          distribution: corretto
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+#      - name: Initialize CodeQL
+#        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7
+#        with:
+#          languages: java-kotlin
+#      - name: Build code
+#        run: ./gradlew compileJava -x test
+#      - name: Perform Analysis
+#        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7
+#      - name: Secret Scanning
+#        uses: trufflesecurity/trufflehog@17456f8c7d042d8c82c9a8ca9e937231f9f42e26
+#        with:
+#          extra_args: --results=verified,unknown
+#      - name: Run Trivy vulnerability scanner in config mode
+#        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+#        with:
+#          scan-type: config
+#          scan-ref: "."
+#
+#  build:
+#    runs-on: ubuntu-latest
+#    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
+#    needs: [ test, security ]
+#    environment: production
+#    permissions:
+#      id-token: write
+#    outputs:
+#      image: ${{ steps.build_image.outputs.image }}
+#    steps:
+#      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+#      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
+#        with:
+#          aws-region: ${{ vars.AWS_REGION }}
+#          role-to-assume: ${{ secrets.AWS_ROLE }}
+#      - name: Build, tag, and push image to Amazon ECR
+#        id: build_image
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          IMAGE_TAG: ${{ github.sha }}
+#        run: |
+#          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
+#          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+#          echo "image=$ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+#
+#  deploy:
+#    runs-on: ubuntu-latest
+#    if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
+#    needs: [ build ]
+#    environment: production
+#    permissions:
+#      id-token: write
+#    steps:
+#      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
+#        with:
+#          aws-region: ${{ vars.AWS_REGION }}
+#          role-to-assume: ${{ secrets.AWS_ROLE }}
+#      - name: Deploy Lambda function
+#        uses: aws-actions/aws-lambda-deploy@d496277188b89f0be02d7a2216fc912c0427702a
+#        with:
+#          package-type: Image
+#          function-name: ${{ secrets.FUNCTION_NAME }}
+#          image-uri: ${{ needs.build.outputs.image }}

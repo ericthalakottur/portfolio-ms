@@ -13,6 +13,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -56,9 +57,14 @@ public class S3ServiceImpl implements S3Service {
 
     private boolean isValidToken(final String key, final String token) {
         QueryConditional queryConditional = QueryConditional.keyEqualTo(k -> k.partitionValue(key));
+        Map<String, AttributeValue> expressionValues = Map.of(
+                ":token", AttributeValue.builder().s(token).build()
+        );
 
         Expression expression = Expression.builder()
+                .expression("token = :token")
                 .expression("active = true")
+                .expressionValues(expressionValues)
                 .build();
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()

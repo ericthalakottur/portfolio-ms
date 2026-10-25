@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Set up JDK
+      - name: Set up JDK 25
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           java-version: 25
@@ -58,29 +58,46 @@ jobs:
           scan-type: config
           scan-ref: "."
 
-  build-image:
+  build:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
     needs: [ test, security ]
+    environment: production
     permissions:
       id-token: write
+    outputs:
+      image: ${{ steps.build_image.outputs.image }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+      - name: Build, tag, and push image to Amazon ECR
+        id: build_image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/${{ secrets.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'ericthalakottur/portfolio-ms' && github.ref == 'refs/heads/main' }}
-    needs: [ build-image ]
+    needs: [ build ]
     environment: production
     permissions:
       id-token: write
     steps:
-      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c
         with:
           aws-region: ${{ vars.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE }}
-      - name: Deploy to AWS Lambda
-        run: |
-          aws lambda update-function-code \
-          --function-name ${{ secrets.FUNCTION_NAME }} \
-          --image-uri ${{ secrets.IMAGE_URL }}
+      - name: Deploy Lambda function
+        uses: aws-actions/aws-lambda-deploy@d496277188b89f0be02d7a2216fc912c0427702a
+        with:
+          package-type: Image
+          function-name: ${{ secrets.FUNCTION_NAME }}
+          image-uri: ${{ needs.build.outputs.image }}

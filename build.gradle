@@ -30,7 +30,12 @@ repositories {
 dependencies {
     implementation "org.springframework.boot:spring-boot-starter-webflux"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
-    implementation "com.amazonaws.serverless:aws-serverless-java-container-springboot4:3.0.0"
+    implementation platform("software.amazon.awssdk:bom:2.57.3")
+    implementation "software.amazon.awssdk:s3"
+    implementation "software.amazon.awssdk:sso"
+    implementation "software.amazon.awssdk:ssooidc"
+    implementation "software.amazon.awssdk:dynamodb"
+    implementation "software.amazon.awssdk:dynamodb-enhanced"
     implementation "io.github.resilience4j:resilience4j-spring-boot4:${resilience4jVersion}"
     implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
     compileOnly "org.projectlombok:lombok"

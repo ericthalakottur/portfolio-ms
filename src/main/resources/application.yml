@@ -5,6 +5,10 @@ spring:
     ansi:
       enabled: ALWAYS
 
+server:
+  servlet:
+    context-path: /api
+
 # Spring Boot Actuator configuration
 management:
   endpoints:
